@@ -127,6 +127,28 @@ if ($remotes -notcontains 'origin') {
 
 # ── 4. 仓库存在吗 ──────────────────────────────────────────────────────────────
 Step "检查 GitHub 上的仓库"
+# 先用 /user 体检 token：无效就**降级**成「没有 token」继续跑，绝不半路把整个发布掐断。
+# （最惨的一次踩坑：有人照着文档把占位符 ghp_xxxxxxxx 原样填了进来，于是 401 直接 exit 1，
+#   连本来能成的 git push 也一起断掉。）
+if ($Token) {
+  if ($Token -match '^ghp_x+$|^x+$|<.*>' -or $Token.Length -lt 20) {
+    Say "⚠ 这个 token 看着还是占位符（$Token）。" 'Yellow'
+    Say "  真 token 在这里建：https://github.com/settings/tokens → Generate new token (classic) → 勾选 repo" 'Yellow'
+    Say "  本次按「没有 token」继续：照样提交、推送、打 tag，只是不能自动建仓库和设 topics。" 'Yellow'
+    $Token = $null
+  } else {
+    try {
+      $me = Invoke-GitHub 'GET' '/user'
+      Say "token 有效 ✓（登录身份：$($me.login)）" 'Green'
+    } catch {
+      Say "⚠ token 用不了：$($_.Exception.Message)" 'Yellow'
+      Say "  常见原因：token 已过期 / 被撤销 / 权限不足（建仓库需要 classic token 的 repo 权限）。" 'Yellow'
+      Say "  本次按「没有 token」继续：照样提交、推送、打 tag，只是不能自动建仓库和设 topics。" 'Yellow'
+      $Token = $null
+    }
+  }
+}
+
 $exists = $false
 if ($Token) {
   try { $null = Invoke-GitHub 'GET' "/repos/$Owner/$Repo"; $exists = $true; Say "仓库已存在 ✓" 'Green' }
@@ -141,7 +163,12 @@ if ($Token) {
         $exists = $true
         Say "已创建仓库：$($created.html_url)" 'Green'
         Start-Sleep -Seconds 2   # 让 GitHub 那边把 refs 准备好
-      } catch { Die "创建仓库失败：$($_.Exception.Message)" }
+      } catch {
+        # 建仓失败也别死：下面的 push 自己会给出准确结论
+        Say "⚠ 自动建仓失败：$($_.Exception.Message)" 'Yellow'
+        Say "  那就手动建一个空仓库（不要勾 README / .gitignore / License）：" 'Yellow'
+        Say "  https://github.com/new?name=$Repo&owner=$Owner" 'Cyan'
+      }
     }
   }
 } else {
