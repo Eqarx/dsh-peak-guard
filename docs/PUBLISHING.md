@@ -26,25 +26,61 @@
 
 ---
 
+## 0.5 先准备好 GitHub token（只在这两处用得上）
+
+一键脚本需要 token 的**只有两件事**：自动建仓库、设置 topics。
+**没有 token 也能发布** —— 照样提交、推送、打 tag，只是这两步要手动点一下（见 §1 的 B 路线）。
+
+要 token 就这样建（**必须是 classic token**，细粒度的建不了仓库）：
+
+1. 打开 https://github.com/settings/tokens
+2. `Generate new token` → **`Generate new token (classic)`**
+3. Note 随便写（比如 `dsh-peak-guard publish`），Expiration 选 7 天或 30 天
+4. 勾 **`repo`**（这一项就够；只想建公开仓库的话 `public_repo` 也行）
+5. `Generate token` → 复制那串 `ghp_...`
+
+> ⚠️ **别把文档里的 `ghp_xxxxxxxx` 原样粘进命令** —— 那是个占位符，用了它 GitHub 会回
+> `401 未经授权`。脚本现在会对这种明显的占位符/无效 token 给出提示并**降级继续**（不再中断发布），
+> 但自动建仓和 topics 就得手动做了。
+>
+> 临时用一次就够了，不必设成环境变量；脚本把 token 只放进那一次 `git push` 的临时 header，
+> **不会写进 `.git/config`**。
+
 ## 1. 建仓库并推上去
+
+**路线 A：一条命令（推荐）** —— 脚本会提交、建仓库、推送、打 tag、设 topics：
 
 ```powershell
 cd "C:\Users\Eqarx\Documents\deepseek-harness\default-workspace\2026-10-09_2141_DSH高峰期拦截插件\plugins\dsh-peak-guard"
+powershell -ExecutionPolicy Bypass -File publish.ps1 -Token ghp_真正的token -GitName "Eqarx" -GitEmail "你的邮箱"
+```
 
-# 身份只需配一次（填你自己的）
-git config --global user.name  "你的名字"
+**路线 B：不带 token** —— 照样能发布，只是建仓库与设 topics 要手动：
+
+```powershell
+# ① 先去 https://github.com/new?name=dsh-peak-guard&owner=Eqarx 建一个**空**仓库
+#    （不要勾 README / .gitignore / License，否则第一次推送会冲突）
+# ② 然后跑：提交 + 配 remote + 推送 + 打 tag
+powershell -ExecutionPolicy Bypass -File publish.ps1 -SkipTopic
+```
+
+推送时 Git Credential Manager 会弹窗让你登录 GitHub（浏览器授权那套），**不需要**手输 token。
+
+**路线 C：全手动**
+
+```powershell
+git config --global user.name  "你的名字"      # 只需一次
 git config --global user.email "你的邮箱@example.com"
-
-# 文件已经 git add 过了
 git commit -m "feat: dsh-peak-guard 1.0.0 — 高峰时段拦下模型调用并记录被拦请求"
-
-# 去 https://github.com/new 建一个空仓库（名字 dsh-peak-guard，不要勾 README/.gitignore/License）
-git remote add origin https://github.com/<你的用户名>/dsh-peak-guard.git
+git remote add origin https://github.com/Eqarx/dsh-peak-guard.git
 git push -u origin main
 ```
 
-推送用 **Personal Access Token**（GitHub 已不接受密码）：Settings → Developer settings →
-Personal access tokens，勾 `repo` 即可。
+> 出错时看这里：
+> * `401 未经授权` → token 不对。最常见的是把文档里的 `ghp_xxxxxxxx` 当成了真 token。
+> * `Repository not found` / `remote: Not Found` → 仓库还没建，或建的时候勾了 README（改用
+>   `git pull --rebase origin main` 再推）。
+> * `failed to push some refs` → 远端已有内容，先 `git pull --rebase origin main`。
 
 ## 2. 打版本 tag（GitHub 上会生成 Release 页）
 
