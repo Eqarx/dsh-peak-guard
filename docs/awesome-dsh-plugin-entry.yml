@@ -1,0 +1,19 @@
+# 上架 dsh-market 用的条目文件（可直接粘贴）
+#
+# 用法：在 awesome-dsh-plugin 的 fork 里新建
+#   data/plugins/Eqarx__dsh-peak-guard.yml（文件名 = 用户名 + 双下划线 + 仓库名）
+# 把下面内容整段粘进去，只改两个 Eqarx。
+#
+# 注意：
+#   · url 必须与仓库地址完全一致；
+#   · description.en 是必填项，必须属实（维护者会对着代码核）；
+#   · description 里若出现半角冒号加空格，整行要用引号包起来（本文没有）；
+#   · category 取值见上游 contributing.md，本插件属于 usage（峰谷计费/省钱一类）。
+#   · 只提交这一个文件，不要动 README 与别人的条目。
+
+url: https://github.com/Eqarx/dsh-peak-guard
+name: Eqarx/dsh-peak-guard
+category: usage
+description:
+  en: Blocks every model call during DeepSeek's peak pricing windows before any bytes leave the machine, answers in the model's place, and keeps a searchable record of what it blocked.
+  zh: DeepSeek 高峰计价时段直接拦下模型调用（一个字节都不发出去），替模型回一句说明，并把拦下的请求记成一份可搜索、可勾选、可清理的列表。

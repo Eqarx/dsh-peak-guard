@@ -1,0 +1,6 @@
+# 仓库里统一用 LF；Windows 上的 PowerShell / cmd 脚本保留 CRLF 以便直接双击运行。
+* text=auto eol=lf
+*.ps1 text eol=crlf
+*.cmd text eol=crlf
+*.png binary
+*.jpg binary

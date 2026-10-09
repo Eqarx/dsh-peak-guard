@@ -1,0 +1,59 @@
+# dsh-peak-guard —— 这一层只干一件事：往 profile 的插件树里插一行。
+#
+# 行 id 叫 peak-guard，改成别的名字也可以，但要和 /peak 命令提示里说的一致。
+# config 里没写的键会用插件内置默认值；写错类型不会让 DSH 起不来，只会在
+# DSH 日志里留一条告警，然后退回默认值（见 lib/peak.js 的 normalizeConfig）。
+- insert:
+    - id: peak-guard
+      name: dsh-peak-guard
+      config:
+        # 总开关。false = 插件加载但什么都不拦（/peak 命令仍然可用）。
+        enabled: true
+        # 判断「本地钟点」用的时区。窗口下面的 09:00-12:00 指的是这个时区的墙上时间。
+        timeZone: Asia/Shanghai
+        # 高峰窗口（本地钟点，半开区间 [start, end)）。默认 = DeepSeek 高峰计价时段：
+        # 北京时间上午 09:00–12:00、下午 14:00–18:00。
+        # 传 [] 表示永不拦截；写 "HH:MM-HH:MM"，跨午夜也可以（如 "22:00-02:00"）。
+        peakWindows:
+          - "09:00-12:00"
+          - "14:00-18:00"
+        # 本地周六/周日全天算谷价（官方规则如此）。
+        weekendsOffPeak: true
+        # 法定假期（本地日历日，全天谷价）。支持 "YYYY-MM-DD"，也支持区间
+        # "YYYY-MM-DD..YYYY-MM-DD"。默认值与 dsh-cost-meter 的假期表逐项相同，
+        # 每年国务院安排公布后需要更新一次。
+        holidays:
+          - "2026-09-25"
+          - "2026-09-26"
+          - "2026-09-27"
+          - "2026-10-01"
+          - "2026-10-02"
+          - "2026-10-03"
+          - "2026-10-04"
+          - "2026-10-05"
+          - "2026-10-06"
+          - "2026-10-07"
+        # 拦截提示语：tone 选内置那两套之一（polite = 正经版；joke = 彩蛋版）。
+        # 显式写 message 就盖过 tone。
+        tone: polite
+        # 彩蛋版原文（想换回来就把上面改成 tone: joke）：
+        #   "现在是梁文峰时间，你马内不要了？胆子真是肥嘟嘟的"
+        # message: "（自定义话术写这里，会盖过 tone）"
+        # true = 在提示语下面补几行「现在几点、什么时候转谷时、怎么硬闯」。
+        # 想要「只说那一句」，把它设成 false。
+        hint: true
+        # 会话标题、上下文压缩这类「管家调用」默认放行（拦了只会让标题变成提示语、
+        # 让上下文压不动）。true = 连它们一起拦，追求「高峰期一个 token 都不发」。
+        blockUtilityCalls: false
+        # 白名单会话：这些 session id 永远不拦（例如正在干活的自动化会话）。
+        allowSessions: []
+        # `/peak off` 不带参数时默认放行多少分钟。
+        snoozeMinutes: 30
+        # ── 被拦截列表（界面上的只读列表：高峰期间拦下了哪些请求；插件不做任何动作）──
+        # 最多记多少条（1–200）。
+        blockedLimit: 50
+        # 记录最大存活分钟数，超过就丢弃（默认 12 小时）。
+        blockedMaxAgeMinutes: 720
+        # 开关与被拦截列表的落盘位置。不写就用
+        # <DSH_HOME>/plugin-data/dsh-peak-guard/state.json；写空字符串 "" = 不落盘。
+        # statePath: ""
